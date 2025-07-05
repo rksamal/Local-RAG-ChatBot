@@ -1,0 +1,5 @@
+https://www.ncqa.org/hedis/measures/
+https://www.ncqa.org/hedis/
+https://www.cms.gov/medicare/quality-initiatives-patient-assessment-instruments
+https://www.cms.gov/Regulations-and-Guidance/Guidance/Manuals
+https://www.cms.gov/medicare/quality-initiatives-patient-assessment-instruments/mips/quality-measures

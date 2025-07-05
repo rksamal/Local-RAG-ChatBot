@@ -1,0 +1,94 @@
+# ingest_docs.py
+
+from loaders.pdf_loader import load_pdf
+from loaders.word_loader import load_word
+from loaders.web_loader import load_urls_from_file
+
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain.embeddings import OllamaEmbeddings
+# from langchain.vectorstores import FAISS
+from langchain_community.vectorstores import FAISS  # ✅ Correct!
+from langchain_core.documents import Document
+
+import os
+
+from langchain_community.embeddings import OllamaEmbeddings
+from langchain_community.llms import Ollama
+
+embeddings = OllamaEmbeddings(model="nomic-embed-text")
+llm = Ollama(model="llama3")
+
+
+
+DATA_DIR = "docs/"
+VECTOR_DB_DIR = "data/vectorstore/"
+URL_LIST_PATH = os.path.join(DATA_DIR, "urls.txt")
+
+
+def get_file_loader(file_path):
+    if file_path.endswith(".pdf"):
+        return lambda path: [Document(
+            page_content=open(path, "rb").read().decode(errors="ignore"),
+            metadata={"source": os.path.basename(path)}
+        )]
+    elif file_path.endswith(".docx"):
+        from loaders.word_loader import load_word
+        return lambda path: [
+            Document(page_content=d.page_content, metadata={"source": os.path.basename(path)})
+            for d in load_word(path)
+        ]
+    elif file_path.endswith(".txt"):
+        return lambda path: [Document(
+            page_content=open(path, "r", encoding="utf-8").read(),
+            metadata={"source": os.path.basename(path)}
+        )]
+
+
+def process_documents(docs, db_path):
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    split_docs = splitter.split_documents(docs)
+
+    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    vectordb = FAISS.from_documents(split_docs, embeddings)
+    vectordb.save_local(db_path, safe_serialization=True)
+
+
+def main():
+    all_docs = []
+
+    # Load from files
+    for root, _, files in os.walk(DATA_DIR):
+        for file in files:
+            file_path = os.path.join(root, file)
+
+            if file == "urls.txt":
+                continue
+
+            loader = get_file_loader(file_path)
+            if loader:
+                print(f"Loading {file_path}")
+                try:
+                    docs = loader(file_path)
+                    all_docs.extend(docs)
+                except Exception as e:
+                    print(f"Error loading {file_path}: {e}")
+
+    # Load from URLs
+    if os.path.exists(URL_LIST_PATH):
+        print(f"Loading URLs from {URL_LIST_PATH}")
+        try:
+            url_docs = load_urls_from_file(URL_LIST_PATH)
+            all_docs.extend(url_docs)
+        except Exception as e:
+            print(f"Error loading URLs: {e}")
+
+    if all_docs:
+        print(f"Total documents: {len(all_docs)}")
+        process_documents(all_docs, VECTOR_DB_DIR)
+        print("Ingestion complete.")
+    else:
+        print("No documents found for ingestion.")
+
+
+if __name__ == "__main__":
+    main()

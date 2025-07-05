@@ -1,0 +1,6 @@
+PyPDF2
+python-docx
+beautifulsoup4
+requests
+langchain
+faiss-cpu
