@@ -50,7 +50,8 @@ def process_documents(docs, db_path):
 
     embeddings = OllamaEmbeddings(model="nomic-embed-text")
     vectordb = FAISS.from_documents(split_docs, embeddings)
-    vectordb.save_local(db_path, safe_serialization=True)
+    vectordb.save_local(db_path)
+
 
 
 def main():

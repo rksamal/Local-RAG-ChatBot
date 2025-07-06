@@ -4,3 +4,14 @@ beautifulsoup4
 requests
 langchain
 faiss-cpu
+
+
+streamlit
+langchain
+langchain-community
+faiss-cpu
+PyPDF2
+python-docx
+requests
+beautifulsoup4
+unstructured
